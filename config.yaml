@@ -1,0 +1,74 @@
+prowjob_namespace: prow
+pod_namespace: test-pods
+
+in_repo_config:
+  enabled:
+    "*": true
+
+deck:
+ branding:
+  header_color: "#3a0052" # Falco Teal
+  logo: "/static/extensions/favicon.png"
+  favicon: "/static/extensions/favicon.png"
+ spyglass:
+   lenses:
+   - lens:
+       name: metadata
+     required_files:
+     - started.json|finished.json
+   - lens:
+       config:
+       name: buildlog
+     required_files:
+     - build-log.txt
+   - lens:
+       name: junit
+     required_files:
+     - .*/junit.*\.xml
+   - lens:
+       name: podinfo
+     required_files:
+     - podinfo.json
+
+plank:
+  job_url_prefix_config:
+    "*": https://c28312v1.fyre.ibm.com/view/
+  report_templates:
+    '*': >-
+        [Full PR test history](https://c28312v1.fyre.ibm.com/pr-history?org={{.Spec.Refs.Org}}&repo={{.Spec.Refs.Repo}}&pr={{with index .Spec.Refs.Pulls 0}}{{.Number}}{{end}}).
+        [Your PR dashboard](https://c28312v1.fyre.ibm.com/pr?query=is:pr+state:open+author:{{with
+        index .Spec.Refs.Pulls 0}}{{.Author}}{{end}}).
+  default_decoration_configs:
+    "*":
+      gcs_configuration:
+        bucket: s3://prow-logs
+        path_strategy: explicit
+      s3_credentials_secret: s3-credentials
+      utility_images:
+        clonerefs: gcr.io/k8s-prow/clonerefs:v20230406-d42c989ab5
+        entrypoint: gcr.io/k8s-prow/entrypoint:v20230406-d42c989ab5
+        initupload: gcr.io/k8s-prow/initupload:v20230406-d42c989ab5
+        sidecar: gcr.io/k8s-prow/sidecar:v20230406-d42c989ab5
+
+tide:
+  queries:
+  - labels:
+    - lgtm
+    - approved
+    missingLabels:
+    - needs-rebase
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - do-not-merge/invalid-owners-file
+    orgs:
+    - Poorna-Gottimukkula1
+#Jobs here
+decorate_all_jobs: true
+periodics:
+- interval: 5h
+  agent: kubernetes
+  name: echo-test
+  spec:
+    containers:
+    - image: quay.io/jitesoft/alpine:3.18.5
+      command: ["/bin/date"]
